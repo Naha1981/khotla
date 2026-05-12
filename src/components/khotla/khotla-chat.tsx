@@ -108,9 +108,9 @@ export function KhotlaChat() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[600px]">
       {/* Chat Interface */}
-      <Card className="lg:col-span-3 bg-white/5 border-white/10 rounded flex flex-col">
+      <Card className="lg:col-span-3 bg-content-card border-content-border rounded flex flex-col">
         <CardHeader className="pb-2 shrink-0">
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-gold" />
             Citizen Report Portal — AI-Powered
           </CardTitle>
@@ -134,8 +134,8 @@ export function KhotlaChat() {
                 <div
                   className={`max-w-[80%] rounded p-3 text-sm leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-navy-light text-white'
-                      : 'bg-white/10 text-gray-200'
+                      ? 'bg-user-bubble text-user-bubble-fg'
+                      : 'bg-ai-bubble text-ai-bubble-fg'
                   }`}
                 >
                   {msg.content.split('\n').map((line, j) => (
@@ -149,9 +149,9 @@ export function KhotlaChat() {
                         {msg.category}
                       </Badge>
                       <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${
-                        msg.priority === 'HIGH' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                        msg.priority === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                        'bg-green-500/20 text-green-400 border-green-500/30'
+                        msg.priority === 'HIGH' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30' :
+                        msg.priority === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
+                        'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
                       }`}>
                         {msg.priority}
                       </Badge>
@@ -162,8 +162,8 @@ export function KhotlaChat() {
                   </p>
                 </div>
                 {msg.role === 'user' && (
-                  <div className="w-7 h-7 rounded bg-navy-light flex items-center justify-center shrink-0 mt-1">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-7 h-7 rounded bg-user-bubble flex items-center justify-center shrink-0 mt-1">
+                    <User className="w-4 h-4 text-user-bubble-fg" />
                   </div>
                 )}
               </div>
@@ -172,14 +172,14 @@ export function KhotlaChat() {
           </div>
 
           {/* Input */}
-          <div className="shrink-0 border-t border-white/10 pt-3">
+          <div className="shrink-0 border-t border-content-border pt-3">
             <div className="flex gap-2">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Describe the issue... (English or Sesotho)"
-                className="min-h-[60px] max-h-[120px] bg-white/5 border-white/10 text-white placeholder:text-muted-foreground resize-none rounded text-sm"
+                className="min-h-[60px] max-h-[120px] bg-background border-content-border text-foreground placeholder:text-muted-foreground resize-none rounded text-sm"
                 disabled={sending}
               />
               <Button
@@ -199,9 +199,9 @@ export function KhotlaChat() {
       </Card>
 
       {/* Info Panel */}
-      <Card className="lg:col-span-1 bg-white/5 border-white/10 rounded">
+      <Card className="lg:col-span-1 bg-content-card border-content-border rounded">
         <CardHeader className="pb-2">
-          <CardTitle className="text-white text-sm">Report Settings</CardTitle>
+          <CardTitle className="text-foreground text-sm">Report Settings</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -210,7 +210,7 @@ export function KhotlaChat() {
               value={citizenName}
               onChange={(e) => setCitizenName(e.target.value)}
               placeholder="+266 5600 XXXX"
-              className="bg-white/5 border-white/10 text-white placeholder:text-muted-foreground rounded h-8 text-sm"
+              className="bg-background border-content-border text-foreground placeholder:text-muted-foreground rounded h-8 text-sm"
             />
           </div>
           <div className="space-y-2">
@@ -219,7 +219,7 @@ export function KhotlaChat() {
               <div key={cat} className="text-xs text-muted-foreground py-0.5">{cat}</div>
             ))}
           </div>
-          <div className="pt-2 border-t border-white/10">
+          <div className="pt-2 border-t border-content-border">
             <h4 className="text-xs font-medium text-gold mb-1">How It Works</h4>
             <ol className="text-[10px] text-muted-foreground space-y-1 list-decimal pl-3">
               <li>Type your issue in English or Sesotho</li>

@@ -46,16 +46,73 @@
   --color-navy-dark: #001529;
   --color-gold: #C5A55A;
   --color-gold-light: #D4BA7A;
+  --color-header-bg: var(--header-bg);
+  --color-header-border: var(--header-border);
+  --color-content-card: var(--content-card);
+  --color-content-card-hover: var(--content-card-hover);
+  --color-content-border: var(--content-border);
+  --color-user-bubble: var(--user-bubble);
+  --color-user-bubble-fg: var(--user-bubble-fg);
+  --color-ai-bubble: var(--ai-bubble);
+  --color-ai-bubble-fg: var(--ai-bubble-fg);
+  --color-table-row-hover: var(--table-row-hover);
+  --color-table-row-border: var(--table-row-border);
+  --color-seed-bg: var(--seed-bg);
+  --color-tab-bg: var(--tab-bg);
+  --color-tab-border: var(--tab-border);
 }
 
+/* ===== LIGHT THEME (default) ===== */
 :root {
   --radius: 4px;
-  --background: #002147;
-  --foreground: #FFFFFF;
+  --background: #F0F2F7;
+  --foreground: #1A1A2E;
   --card: #FFFFFF;
   --card-foreground: #002147;
   --popover: #FFFFFF;
   --popover-foreground: #002147;
+  --primary: #C5A55A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E8EAF0;
+  --secondary-foreground: #002147;
+  --muted: #E8EAF0;
+  --muted-foreground: #6B7280;
+  --accent: #E8EAF0;
+  --accent-foreground: #002147;
+  --destructive: #DC2626;
+  --border: #D1D5DB;
+  --input: #D1D5DB;
+  --ring: #C5A55A;
+  --chart-1: #C5A55A;
+  --chart-2: #3B82F6;
+  --chart-3: #10B981;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+  /* Custom component vars */
+  --header-bg: #002147;
+  --header-border: rgba(255, 255, 255, 0.15);
+  --content-card: #FFFFFF;
+  --content-card-hover: #F9FAFB;
+  --content-border: #E5E7EB;
+  --user-bubble: #002147;
+  --user-bubble-fg: #FFFFFF;
+  --ai-bubble: #F3F4F6;
+  --ai-bubble-fg: #1F2937;
+  --table-row-hover: #F9FAFB;
+  --table-row-border: #E5E7EB;
+  --seed-bg: #FEF3C7;
+  --tab-bg: #FFFFFF;
+  --tab-border: #E5E7EB;
+}
+
+/* ===== DARK THEME ===== */
+.dark {
+  --background: #002147;
+  --foreground: #FFFFFF;
+  --card: rgba(255, 255, 255, 0.05);
+  --card-foreground: #FFFFFF;
+  --popover: #001529;
+  --popover-foreground: #FFFFFF;
   --primary: #C5A55A;
   --primary-foreground: #002147;
   --secondary: #003366;
@@ -73,6 +130,21 @@
   --chart-3: #10B981;
   --chart-4: #F59E0B;
   --chart-5: #EF4444;
+  /* Custom component vars */
+  --header-bg: #001529;
+  --header-border: rgba(255, 255, 255, 0.1);
+  --content-card: rgba(255, 255, 255, 0.05);
+  --content-card-hover: rgba(255, 255, 255, 0.08);
+  --content-border: rgba(255, 255, 255, 0.1);
+  --user-bubble: #003366;
+  --user-bubble-fg: #FFFFFF;
+  --ai-bubble: rgba(255, 255, 255, 0.1);
+  --ai-bubble-fg: #E5E7EB;
+  --table-row-hover: rgba(255, 255, 255, 0.05);
+  --table-row-border: rgba(255, 255, 255, 0.05);
+  --seed-bg: rgba(16, 185, 129, 0.1);
+  --tab-bg: rgba(255, 255, 255, 0.05);
+  --tab-border: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
@@ -84,26 +156,47 @@
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
+/* Custom scrollbar - dark */
+.dark ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-::-webkit-scrollbar-track {
+.dark ::-webkit-scrollbar-track {
   background: rgba(0, 33, 71, 0.3);
 }
-::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
   background: rgba(197, 165, 90, 0.4);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(197, 165, 90, 0.6);
 }
 
-/* Leaflet overrides for dark theme */
+/* Custom scrollbar - light */
+:root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+:root ::-webkit-scrollbar-track {
+  background: #F0F2F7;
+}
+:root ::-webkit-scrollbar-thumb {
+  background: #C5A55A;
+  border-radius: 3px;
+}
+:root ::-webkit-scrollbar-thumb:hover {
+  background: #B08D3E;
+}
+
+/* Leaflet overrides */
 .leaflet-container {
-  background: #001529 !important;
   border-radius: 4px;
+}
+.dark .leaflet-container {
+  background: #001529 !important;
+}
+:root .leaflet-container {
+  background: #E5E7EB !important;
 }
 .leaflet-popup-content-wrapper {
   border-radius: 4px !important;

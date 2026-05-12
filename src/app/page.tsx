@@ -45,26 +45,26 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-navy">
+    <div className="min-h-screen flex flex-col bg-background">
       <KhotlaHeader />
 
       <main className="flex-1 px-4 sm:px-6 py-4 max-w-[1600px] mx-auto w-full">
         {/* Data seeding indicator */}
         {seeding && (
-          <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground bg-white/5 rounded px-3 py-2">
+          <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground bg-seed-bg rounded px-3 py-2">
             <Loader2 className="w-3 h-3 animate-spin text-gold" />
             Initializing database with sample data...
           </div>
         )}
         {seeded && (
-          <div className="mb-4 flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 rounded px-3 py-2">
+          <div className="mb-4 flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded px-3 py-2">
             <CheckCircle2 className="w-3 h-3" />
             Database initialized. Demo data loaded.
           </div>
         )}
 
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="bg-white/5 border border-white/10 rounded p-1 h-auto flex-wrap gap-1">
+          <TabsList className="bg-tab-bg border border-tab-border rounded p-1 h-auto flex-wrap gap-1">
             <TabsTrigger
               value="dashboard"
               className="data-[state=active]:bg-gold data-[state=active]:text-navy rounded text-xs sm:text-sm gap-1.5 px-3 py-1.5"
@@ -100,7 +100,7 @@ export default function Home() {
             <Button
               size="sm"
               variant="ghost"
-              className="text-muted-foreground hover:text-white text-xs gap-1.5 h-8 px-2 ml-1"
+              className="text-muted-foreground hover:text-foreground text-xs gap-1.5 h-8 px-2 ml-1"
               onClick={seedDatabase}
               disabled={seeding}
             >

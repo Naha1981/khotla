@@ -25,3 +25,27 @@ Stage Summary:
 - All 4 tabs functional: Dashboard, Transparency Map, Citizen Chat, Edge Vision
 - Evolution API integration configured (URL: https://my-evolution-api-capsule.onrender.com)
 - WhatsApp webhook endpoint ready at /api/whatsapp-webhook
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Add dark/light mode toggle to KHOTLA AI
+
+Work Log:
+- Created ThemeProvider component wrapping next-themes
+- Updated layout.tsx with ThemeProvider (defaultTheme: dark, attribute: class)
+- Designed dual CSS variable system: :root (light) and .dark (dark) with custom component vars
+- Added custom CSS variables: header-bg, header-border, content-card, content-card-hover, content-border, user-bubble, ai-bubble, table-row-hover, table-row-border, seed-bg, tab-bg, tab-border
+- Added Sun/Moon toggle button in header using useTheme() from next-themes
+- Used useSyncExternalStore pattern for mounted detection (avoids useEffect setState lint error)
+- Updated all 6 components to use semantic theme-aware classes instead of hardcoded colors
+- Updated Leaflet map to switch between CartoDB dark_all and light_all tiles on theme change
+- Updated scrollbar styles for both light and dark modes
+- All lint checks pass cleanly
+
+Stage Summary:
+- Dark mode toggle fully functional in header (Sun/Moon icon button)
+- Light theme: white/light gray backgrounds, navy header/footer, gold accents
+- Dark theme: navy backgrounds, dark header/footer, gold accents (original design)
+- Map tiles switch between dark and light automatically
+- All components properly themed with CSS variable-based classes

@@ -1,13 +1,26 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Shield, Wifi, WifiOff, Activity } from 'lucide-react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
+import { useTheme } from 'next-themes'
+import { Shield, Wifi, WifiOff, Activity, Sun, Moon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+
+const emptySubscribe = () => () => {}
+function useHasMounted() {
+  return useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
+}
 
 export function KhotlaHeader() {
   const [whatsappStatus, setWhatsappStatus] = useState<'online' | 'offline' | 'checking'>('checking')
   const [lastChecked, setLastChecked] = useState<string>('')
+  const mounted = useHasMounted()
   const hasChecked = useRef(false)
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     if (hasChecked.current) return
@@ -40,7 +53,7 @@ export function KhotlaHeader() {
   }, [])
 
   return (
-    <header className="bg-navy-dark border-b border-white/10 px-4 sm:px-6 py-3">
+    <header className="bg-header-bg border-b border-header-border px-4 sm:px-6 py-3">
       <div className="flex items-center justify-between max-w-[1600px] mx-auto">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded bg-gold">
@@ -50,14 +63,14 @@ export function KhotlaHeader() {
             <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
               KHOTLA AI
             </h1>
-            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-widest uppercase">
+            <p className="text-[10px] sm:text-xs text-gray-300 tracking-widest uppercase">
               Sechaba se Bua — The People Speak
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4">
-          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-gray-300">
             <Activity className="w-3.5 h-3.5 text-gold" />
             <span>Sovereign AI Active</span>
           </div>
@@ -86,9 +99,26 @@ export function KhotlaHeader() {
             </span>
           </Badge>
           {lastChecked && (
-            <span className="hidden lg:inline text-[10px] text-muted-foreground">
+            <span className="hidden lg:inline text-[10px] text-gray-400">
               Last check: {lastChecked}
             </span>
+          )}
+
+          {/* Theme Toggle */}
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="h-8 w-8 p-0 rounded text-gray-300 hover:text-white hover:bg-white/10"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </Button>
           )}
         </div>
       </div>

@@ -60,9 +60,9 @@ export function KhotlaMap() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Map */}
         <div className="lg:col-span-2">
-          <Card className="bg-white/5 border-white/10 rounded overflow-hidden">
+          <Card className="bg-content-card border-content-border rounded overflow-hidden">
             <CardHeader className="pb-2">
-              <CardTitle className="text-white text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-gold" />
                 National Transparency Map — Lesotho
               </CardTitle>
@@ -91,9 +91,9 @@ export function KhotlaMap() {
 
         {/* Project List */}
         <div className="lg:col-span-1">
-          <Card className="bg-white/5 border-white/10 rounded">
+          <Card className="bg-content-card border-content-border rounded">
             <CardHeader className="pb-2">
-              <CardTitle className="text-white text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-gold" />
                 Infrastructure Projects
               </CardTitle>
@@ -110,11 +110,11 @@ export function KhotlaMap() {
                     className={`w-full text-left p-3 rounded transition-colors ${
                       selectedProject?.id === project.id
                         ? 'bg-gold/20 border border-gold/30'
-                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                        : 'bg-content-card border border-content-border hover:bg-content-card-hover'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-1.5">
-                      <h4 className="text-sm font-medium text-white leading-tight">{project.title}</h4>
+                      <h4 className="text-sm font-medium text-foreground leading-tight">{project.title}</h4>
                       <Badge
                         variant="outline"
                         className="text-[9px] px-1.5 py-0 shrink-0 ml-2"
@@ -133,11 +133,11 @@ export function KhotlaMap() {
                     <div className="space-y-1">
                       <div className="flex justify-between text-[10px]">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="text-white font-medium">{project.progress}%</span>
+                        <span className="text-foreground font-medium">{project.progress}%</span>
                       </div>
                       <Progress
                         value={project.progress}
-                        className="h-1.5 bg-white/10"
+                        className="h-1.5 bg-content-border"
                       />
                     </div>
                   </button>

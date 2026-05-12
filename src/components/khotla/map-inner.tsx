@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useTheme } from 'next-themes'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -27,7 +28,10 @@ export function MapInner({
   const mapRef = useRef<L.Map | null>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const markersRef = useRef<L.CircleMarker[]>([])
+  const tileLayerRef = useRef<L.TileLayer | null>(null)
+  const { resolvedTheme } = useTheme()
 
+  // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return
 
@@ -38,18 +42,33 @@ export function MapInner({
       attributionControl: false,
     })
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-    }).addTo(map)
+    tileLayerRef.current = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      { maxZoom: 19 }
+    ).addTo(map)
 
     mapRef.current = map
 
     return () => {
       map.remove()
       mapRef.current = null
+      tileLayerRef.current = null
     }
   }, [])
 
+  // Switch tile layer on theme change
+  useEffect(() => {
+    if (!mapRef.current || !tileLayerRef.current || !resolvedTheme) return
+
+    const isDark = resolvedTheme === 'dark'
+    const newUrl = isDark
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+
+    tileLayerRef.current.setUrl(newUrl)
+  }, [resolvedTheme])
+
+  // Update markers
   useEffect(() => {
     if (!mapRef.current) return
 
@@ -104,6 +123,7 @@ export function MapInner({
     })
   }, [projects, onSelectProject])
 
+  // Fly to selected project
   useEffect(() => {
     if (!mapRef.current || !selectedProject) return
     mapRef.current.flyTo([selectedProject.lat, selectedProject.lng], 10, { duration: 1 })

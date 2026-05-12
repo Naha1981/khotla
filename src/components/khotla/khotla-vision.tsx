@@ -116,26 +116,26 @@ export function KhotlaVision() {
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
-      CRITICAL: 'text-red-400',
-      HIGH: 'text-orange-400',
-      MEDIUM: 'text-yellow-400',
-      LOW: 'text-green-400',
+      CRITICAL: 'text-red-600 dark:text-red-400',
+      HIGH: 'text-orange-600 dark:text-orange-400',
+      MEDIUM: 'text-yellow-600 dark:text-yellow-400',
+      LOW: 'text-green-600 dark:text-green-400',
     }
-    return colors[severity] || 'text-gray-400'
+    return colors[severity] || 'text-muted-foreground'
   }
 
   const getUrgencyIcon = (urgency: string) => {
-    if (urgency === 'IMMEDIATE') return <AlertTriangle className="w-3 h-3 text-red-400" />
-    if (urgency === '24HOURS') return <AlertTriangle className="w-3 h-3 text-orange-400" />
-    return <CheckCircle className="w-3 h-3 text-green-400" />
+    if (urgency === 'IMMEDIATE') return <AlertTriangle className="w-3 h-3 text-red-500 dark:text-red-400" />
+    if (urgency === '24HOURS') return <AlertTriangle className="w-3 h-3 text-orange-500 dark:text-orange-400" />
+    return <CheckCircle className="w-3 h-3 text-green-500 dark:text-green-400" />
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Upload Zone */}
-      <Card className="bg-white/5 border-white/10 rounded">
+      <Card className="bg-content-card border-content-border rounded">
         <CardHeader className="pb-2">
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Camera className="w-4 h-4 text-gold" />
             Live Edge Monitor — Upload
           </CardTitle>
@@ -154,7 +154,7 @@ export function KhotlaVision() {
             className={`border-2 border-dashed rounded p-8 text-center cursor-pointer transition-colors ${
               dragActive
                 ? 'border-gold bg-gold/10'
-                : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+                : 'border-content-border hover:border-gold/50 hover:bg-content-card-hover'
             }`}
           >
             <input
@@ -184,7 +184,7 @@ export function KhotlaVision() {
 
           {/* Image Preview */}
           {preview && (
-            <div className="rounded overflow-hidden border border-white/10">
+            <div className="rounded overflow-hidden border border-content-border">
               <img
                 src={preview}
                 alt="Uploaded"
@@ -193,7 +193,7 @@ export function KhotlaVision() {
             </div>
           )}
 
-          <div className="bg-navy-dark rounded p-3 border border-white/5">
+          <div className="bg-secondary rounded p-3 border border-content-border">
             <h4 className="text-xs font-medium text-gold mb-2">Detection Capabilities</h4>
             <div className="grid grid-cols-2 gap-1.5">
               {[
@@ -215,9 +215,9 @@ export function KhotlaVision() {
       </Card>
 
       {/* Terminal Log */}
-      <Card className="bg-white/5 border-white/10 rounded">
+      <Card className="bg-content-card border-content-border rounded">
         <CardHeader className="pb-2">
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Terminal className="w-4 h-4 text-gold" />
             Vision Analysis Log
           </CardTitle>
@@ -235,7 +235,7 @@ export function KhotlaVision() {
               </div>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="border-b border-white/5 p-3 hover:bg-white/5">
+                <div key={log.id} className="border-b border-table-row-border p-3 hover:bg-table-row-hover">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-muted-foreground">
                       [{log.timestamp.toLocaleTimeString()}]
@@ -245,10 +245,10 @@ export function KhotlaVision() {
                       <Badge
                         variant="outline"
                         className={`text-[9px] px-1.5 py-0 ${
-                          log.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                          log.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                          log.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                          'bg-green-500/20 text-green-400 border-green-500/30'
+                          log.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30' :
+                          log.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30' :
+                          log.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30' :
+                          'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
                         }`}
                       >
                         {log.severity}
@@ -258,7 +258,7 @@ export function KhotlaVision() {
                   <div className="space-y-0.5 text-[11px]">
                     <div>
                       <span className="text-gold">OBJECT:</span>{' '}
-                      <span className="text-white">{log.objectDetected}</span>
+                      <span className="text-foreground">{log.objectDetected}</span>
                     </div>
                     <div>
                       <span className="text-gold">CATEGORY:</span>{' '}
@@ -266,19 +266,19 @@ export function KhotlaVision() {
                     </div>
                     <div>
                       <span className="text-gold">CONFIDENCE:</span>{' '}
-                      <span className="text-white">{(log.confidence * 100).toFixed(1)}%</span>
+                      <span className="text-foreground">{(log.confidence * 100).toFixed(1)}%</span>
                     </div>
                     <div>
                       <span className="text-gold">DESC:</span>{' '}
-                      <span className="text-gray-300">{log.description}</span>
+                      <span className="text-muted-foreground">{log.description}</span>
                     </div>
                     <div>
                       <span className="text-gold">ACTION:</span>{' '}
-                      <span className="text-cyan-400">{log.recommendedAction}</span>
+                      <span className="text-cyan-600 dark:text-cyan-400">{log.recommendedAction}</span>
                     </div>
                     <div>
                       <span className="text-gold">URGENCY:</span>{' '}
-                      <span className={log.estimatedUrgency === 'IMMEDIATE' ? 'text-red-400' : 'text-yellow-400'}>
+                      <span className={log.estimatedUrgency === 'IMMEDIATE' ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}>
                         {log.estimatedUrgency}
                       </span>
                     </div>

@@ -88,18 +88,18 @@ export function KhotlaDashboard() {
 
   const getPriorityBadge = (priority: string) => {
     const styles: Record<string, string> = {
-      HIGH: 'bg-red-500/20 text-red-400 border-red-500/30',
-      MEDIUM: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      LOW: 'bg-green-500/20 text-green-400 border-green-500/30',
+      HIGH: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
+      MEDIUM: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
+      LOW: 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30',
     }
     return styles[priority] || styles.MEDIUM
   }
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      Pending: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-      'In Progress': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      Resolved: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      Pending: 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30',
+      'In Progress': 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30',
+      Resolved: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
     }
     return styles[status] || styles.Pending
   }
@@ -120,10 +120,10 @@ export function KhotlaDashboard() {
 
   const statCards = [
     { label: 'Total Reports', value: stats.total, icon: MessageSquare, color: 'text-gold' },
-    { label: 'Pending', value: stats.pending, icon: Clock, color: 'text-orange-400' },
-    { label: 'High Priority', value: stats.high, icon: AlertTriangle, color: 'text-red-400' },
-    { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-emerald-400' },
-    { label: 'Via WhatsApp', value: stats.whatsapp, icon: Wifi, color: 'text-blue-400' },
+    { label: 'Pending', value: stats.pending, icon: Clock, color: 'text-orange-500 dark:text-orange-400' },
+    { label: 'High Priority', value: stats.high, icon: AlertTriangle, color: 'text-red-500 dark:text-red-400' },
+    { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-emerald-500 dark:text-emerald-400' },
+    { label: 'Via WhatsApp', value: stats.whatsapp, icon: Wifi, color: 'text-blue-500 dark:text-blue-400' },
   ]
 
   return (
@@ -131,12 +131,12 @@ export function KhotlaDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((s) => (
-          <Card key={s.label} className="bg-white/5 border-white/10 rounded">
+          <Card key={s.label} className="bg-content-card border-content-border rounded">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">{s.label}</p>
-                  <p className="text-2xl font-bold text-white">{s.value}</p>
+                  <p className="text-2xl font-bold text-foreground">{s.value}</p>
                 </div>
                 <s.icon className={`w-8 h-8 ${s.color} opacity-60`} />
               </div>
@@ -146,10 +146,10 @@ export function KhotlaDashboard() {
       </div>
 
       {/* Reports Table */}
-      <Card className="bg-white/5 border-white/10 rounded">
+      <Card className="bg-content-card border-content-border rounded">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-white text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-gold" />
               Citizen Reports — Real-Time Feed
             </CardTitle>
@@ -157,7 +157,7 @@ export function KhotlaDashboard() {
               size="sm"
               variant="outline"
               onClick={fetchReports}
-              className="border-white/20 text-white hover:bg-white/10 rounded h-8"
+              className="border-content-border text-foreground hover:bg-content-card-hover rounded h-8"
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1" />
               Refresh
@@ -168,7 +168,7 @@ export function KhotlaDashboard() {
           <div className="max-h-[480px] overflow-y-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent">
+                <TableRow className="border-content-border hover:bg-transparent">
                   <TableHead className="text-muted-foreground text-xs">Category</TableHead>
                   <TableHead className="text-muted-foreground text-xs">Priority</TableHead>
                   <TableHead className="text-muted-foreground text-xs">Status</TableHead>
@@ -195,11 +195,11 @@ export function KhotlaDashboard() {
                   </TableRow>
                 ) : (
                   reports.map((report) => (
-                    <TableRow key={report.id} className="border-white/5 hover:bg-white/5">
+                    <TableRow key={report.id} className="border-table-row-border hover:bg-table-row-hover">
                       <TableCell className="text-xs">
                         <span className="flex items-center gap-1.5">
                           <span>{getCategoryIcon(report.category || '')}</span>
-                          <span className="font-medium text-white">{report.category}</span>
+                          <span className="font-medium text-foreground">{report.category}</span>
                         </span>
                       </TableCell>
                       <TableCell className="text-xs">
@@ -212,23 +212,23 @@ export function KhotlaDashboard() {
                           {report.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-gray-300 max-w-[200px] truncate hidden md:table-cell">
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate hidden md:table-cell">
                         {report.description}
                       </TableCell>
                       <TableCell className="text-xs hidden lg:table-cell">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${report.source === 'whatsapp' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
+                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${report.source === 'whatsapp' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30'}`}>
                           {report.source === 'whatsapp' ? 'WhatsApp' : 'Web'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-gray-400 hidden sm:table-cell">{report.citizenName}</TableCell>
-                      <TableCell className="text-xs text-gray-400 max-w-[180px] truncate hidden xl:table-cell">{report.aiSummary}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">{report.citizenName}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate hidden xl:table-cell">{report.aiSummary}</TableCell>
                       <TableCell className="text-xs text-right">
                         {report.status === 'Pending' && (
                           <div className="flex gap-1 justify-end">
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 px-2 text-[10px] border-blue-500/30 text-blue-400 hover:bg-blue-500/10 rounded"
+                              className="h-6 px-2 text-[10px] border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 rounded"
                               onClick={() => updateStatus(report.id, 'In Progress')}
                             >
                               <Eye className="w-3 h-3 mr-0.5" />
@@ -237,7 +237,7 @@ export function KhotlaDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 px-2 text-[10px] border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded"
+                              className="h-6 px-2 text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded"
                               onClick={() => updateStatus(report.id, 'Resolved')}
                             >
                               <CheckCircle className="w-3 h-3 mr-0.5" />
@@ -249,7 +249,7 @@ export function KhotlaDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-6 px-2 text-[10px] border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 rounded"
+                            className="h-6 px-2 text-[10px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded"
                             onClick={() => updateStatus(report.id, 'Resolved')}
                           >
                             <CheckCircle className="w-3 h-3 mr-0.5" />
@@ -257,7 +257,7 @@ export function KhotlaDashboard() {
                           </Button>
                         )}
                         {report.status === 'Resolved' && (
-                          <span className="text-emerald-500 text-[10px]">✓ Closed</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">✓ Closed</span>
                         )}
                       </TableCell>
                     </TableRow>
