@@ -9,43 +9,79 @@ export async function PATCH(
     const { id } = await params
     const data = await req.json()
 
+    // Build update data preserving existing PATCH functionality
+    const updateData: Record<string, unknown> = {}
+    if (data.status) updateData.status = data.status
+    if (data.category) updateData.category = data.category
+    if (data.priority) updateData.priority = data.priority
+
     const report = await db.report.update({
       where: { id },
-      data: {
-        status: data.status,
-        ...(data.category && { category: data.category }),
-        ...(data.priority && { priority: data.priority }),
-      }
+      data: updateData,
     })
 
-    // If status changed to Resolved, try to send WhatsApp notification
-    if (data.status === 'Resolved' && report.citizenName && report.source === 'whatsapp') {
+    // If status changed to Resolved AND the source is whatsapp, notify the citizen
+    if (
+      data.status === 'Resolved' &&
+      report.source === 'whatsapp' &&
+      report.whatsappJid &&
+      !report.resolutionNotified
+    ) {
       try {
-        const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || 'https://my-evolution-api-capsule.onrender.com'
-        const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || ''
-        const EVOLUTION_INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME || 'Khotla_Main'
-        const EVOLUTION_INSTANCE_TOKEN = process.env.EVOLUTION_INSTANCE_TOKEN || ''
+        // Read WhatsAppConfig from the database
+        const whatsappConfig = await db.whatsAppConfig.findFirst()
 
-        if (EVOLUTION_API_KEY) {
-          await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': EVOLUTION_API_KEY,
-              'Authorization': `Bearer ${EVOLUTION_INSTANCE_TOKEN}`,
-            },
-            body: JSON.stringify({
-              number: report.citizenName,
-              text: `KHOTLA AI: Re hodutse bothata ba hau. Re leboha pako ea hau. (Your issue has been resolved. Thank you for your report.)`,
-            }),
-          })
+        if (whatsappConfig?.apiKey) {
+          const { apiBaseUrl, instanceName, apiKey } = whatsappConfig
+          const category = report.category || 'issue'
+          const message = `KHOTLA AI: Bothata ba hau ba ${category} bo hodutse! Re leboha pako ea hau. (Your ${category} issue has been resolved! Thank you for your report.)`
+
+          // Send WhatsApp message using the Evolution API
+          const sendResponse = await fetch(
+            `${apiBaseUrl}/message/sendText/${instanceName}`,
+            {
+              method: 'POST',
+              headers: {
+                apikey: apiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                number: report.whatsappJid.split('@')[0],
+                text: message,
+              }),
+              signal: AbortSignal.timeout(10000),
+            }
+          )
+
+          if (sendResponse.ok) {
+            // Mark the report as notified
+            await db.report.update({
+              where: { id: report.id },
+              data: { resolutionNotified: true },
+            })
+          } else {
+            const errorBody = await sendResponse.text().catch(() => 'unknown')
+            console.error(
+              'Failed to send resolution WhatsApp, API responded with:',
+              sendResponse.status,
+              errorBody
+            )
+          }
+        } else {
+          console.warn(
+            'WhatsApp config not found or missing apiKey — skipping resolution notification'
+          )
         }
-      } catch (e) {
-        console.error('Failed to send resolution WhatsApp:', e)
+      } catch (whatsappError) {
+        // Fallback gracefully — do not fail the PATCH request
+        console.error('Failed to send resolution WhatsApp notification:', whatsappError)
       }
     }
 
-    return NextResponse.json({ report })
+    // Re-fetch to include any resolutionNotified update
+    const finalReport = await db.report.findUnique({ where: { id } })
+
+    return NextResponse.json({ report: finalReport || report })
   } catch (error) {
     console.error('Update report error:', error)
     return NextResponse.json({ error: 'Failed to update report' }, { status: 500 })

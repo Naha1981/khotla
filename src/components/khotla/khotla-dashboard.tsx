@@ -35,6 +35,10 @@ interface Report {
   source: string
   aiSummary: string | null
   imageUrl: string | null
+  whatsappJid: string | null
+  phoneNumber: string | null
+  messageType: string | null
+  resolutionNotified: boolean
 }
 
 export function KhotlaDashboard() {
@@ -216,9 +220,16 @@ export function KhotlaDashboard() {
                         {report.description}
                       </TableCell>
                       <TableCell className="text-xs hidden lg:table-cell">
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${report.source === 'whatsapp' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30'}`}>
-                          {report.source === 'whatsapp' ? 'WhatsApp' : 'Web'}
-                        </Badge>
+                        <div className="flex flex-col gap-0.5">
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 w-fit ${report.source === 'whatsapp' ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30' : report.source === 'vision' ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30' : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30'}`}>
+                            {report.source === 'whatsapp' ? 'WhatsApp' : report.source === 'vision' ? 'Vision AI' : 'Web'}
+                          </Badge>
+                          {report.source === 'whatsapp' && report.messageType && report.messageType !== 'text' && (
+                            <span className="text-[9px] text-muted-foreground">
+                              {report.messageType === 'audio' ? '🎤 Voice' : report.messageType === 'image' ? '📷 Image' : report.messageType === 'location' ? '📍 Location' : report.messageType}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">{report.citizenName}</TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate hidden xl:table-cell">{report.aiSummary}</TableCell>
@@ -257,7 +268,12 @@ export function KhotlaDashboard() {
                           </Button>
                         )}
                         {report.status === 'Resolved' && (
-                          <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">✓ Closed</span>
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">✓ Closed</span>
+                            {report.source === 'whatsapp' && report.resolutionNotified && (
+                              <span className="text-[9px] text-green-500 dark:text-green-400">📱 Citizen notified</span>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>

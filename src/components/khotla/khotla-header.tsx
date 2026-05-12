@@ -16,7 +16,7 @@ function useHasMounted() {
 }
 
 export function KhotlaHeader() {
-  const [whatsappStatus, setWhatsappStatus] = useState<'online' | 'offline' | 'checking'>('checking')
+  const [whatsappStatus, setWhatsappStatus] = useState<'online' | 'offline' | 'not_configured' | 'checking'>('checking')
   const [lastChecked, setLastChecked] = useState<string>('')
   const mounted = useHasMounted()
   const hasChecked = useRef(false)
@@ -26,28 +26,23 @@ export function KhotlaHeader() {
     if (hasChecked.current) return
     hasChecked.current = true
 
-    async function initialCheck() {
+    async function checkStatus() {
       try {
         const res = await fetch('/api/whatsapp-status')
         const data = await res.json()
-        setWhatsappStatus(data.online ? 'online' : 'offline')
+        if (data.state === 'not_configured') {
+          setWhatsappStatus('not_configured')
+        } else {
+          setWhatsappStatus(data.online ? 'online' : 'offline')
+        }
         setLastChecked(new Date().toLocaleTimeString())
       } catch {
         setWhatsappStatus('offline')
       }
     }
 
-    initialCheck()
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch('/api/whatsapp-status')
-        const data = await res.json()
-        setWhatsappStatus(data.online ? 'online' : 'offline')
-        setLastChecked(new Date().toLocaleTimeString())
-      } catch {
-        setWhatsappStatus('offline')
-      }
-    }, 30000)
+    checkStatus()
+    const interval = setInterval(checkStatus, 30000)
 
     return () => clearInterval(interval)
   }, [])
@@ -79,6 +74,8 @@ export function KhotlaHeader() {
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-0 ${
               whatsappStatus === 'online'
                 ? 'bg-emerald-500/20 text-emerald-400'
+                : whatsappStatus === 'not_configured'
+                ? 'bg-yellow-500/20 text-yellow-400'
                 : whatsappStatus === 'offline'
                 ? 'bg-red-500/20 text-red-400'
                 : 'bg-yellow-500/20 text-yellow-400'
@@ -86,16 +83,18 @@ export function KhotlaHeader() {
           >
             {whatsappStatus === 'online' ? (
               <Wifi className="w-3 h-3" />
+            ) : whatsappStatus === 'not_configured' ? (
+              <Activity className="w-3 h-3" />
             ) : whatsappStatus === 'offline' ? (
               <WifiOff className="w-3 h-3" />
             ) : (
               <Activity className="w-3 h-3 animate-pulse" />
             )}
             <span className="hidden sm:inline">
-              WhatsApp Gateway: {whatsappStatus === 'online' ? 'Online' : whatsappStatus === 'offline' ? 'Offline' : 'Checking...'}
+              WhatsApp: {whatsappStatus === 'online' ? 'Online' : whatsappStatus === 'not_configured' ? 'Setup Required' : whatsappStatus === 'offline' ? 'Offline' : 'Checking...'}
             </span>
             <span className="sm:hidden">
-              WA: {whatsappStatus === 'online' ? 'On' : whatsappStatus === 'offline' ? 'Off' : '...'}
+              WA: {whatsappStatus === 'online' ? 'On' : whatsappStatus === 'not_configured' ? 'Setup' : whatsappStatus === 'offline' ? 'Off' : '...'}
             </span>
           </Badge>
           {lastChecked && (

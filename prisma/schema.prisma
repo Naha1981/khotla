@@ -8,18 +8,23 @@ datasource db {
 }
 
 model Report {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  category    String?  // WATER, ROADS, CORRUPTION, HEALTH, EDUCATION, etc.
-  description String?
-  priority    String?  // HIGH, MEDIUM, LOW
-  status      String   @default("Pending") // Pending, In Progress, Resolved
-  citizenName String?  // Phone number or name
-  lat         Float?
-  lng         Float?
-  imageUrl    String?
-  source      String   @default("web") // web, whatsapp
-  aiSummary   String?
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  category           String?  // WATER, ROADS, CORRUPTION, HEALTH, EDUCATION, etc.
+  description        String?
+  priority           String?  // HIGH, MEDIUM, LOW
+  status             String   @default("Pending") // Pending, In Progress, Resolved
+  citizenName        String?  // Phone number or name
+  lat                Float?
+  lng                Float?
+  imageUrl           String?
+  source             String   @default("web") // web, whatsapp
+  aiSummary          String?
+  whatsappJid        String?  // WhatsApp JID e.g. "26656001234@s.whatsapp.net"
+  phoneNumber        String?  // Clean phone number e.g. "+266 5600 1234"
+  audioUrl           String?  // URL or base64 of voice note audio
+  messageType        String   @default("text") // text, audio, image, location
+  resolutionNotified Boolean  @default(false) // Whether citizen was notified of resolution via WhatsApp
 }
 
 model Project {
@@ -31,4 +36,18 @@ model Project {
   lng      Float
   category String? // Infrastructure, Health, Education, etc.
   status   String @default("Active") // Active, Completed, Delayed
+}
+
+model WhatsAppConfig {
+  id              String   @id @default(cuid())
+  instanceName    String   @default("Khotla_Main")
+  apiKey          String?  // Evolution API key
+  instanceToken   String?  // Token for the specific instance
+  apiBaseUrl      String   @default("https://my-evolution-api-capsule.onrender.com")
+  webhookUrl      String?  // The webhook URL configured
+  isConnected     Boolean  @default(false)
+  qrCode          String?  // Base64 QR code for pairing
+  lastConnectedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

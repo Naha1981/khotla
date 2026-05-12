@@ -9,11 +9,13 @@ import { KhotlaDashboard } from '@/components/khotla/khotla-dashboard'
 import { KhotlaMap } from '@/components/khotla/khotla-map'
 import { KhotlaChat } from '@/components/khotla/khotla-chat'
 import { KhotlaVision } from '@/components/khotla/khotla-vision'
+import { KhotlaWhatsappSetup } from '@/components/khotla/khotla-whatsapp-setup'
 import {
   LayoutDashboard,
   Map,
   MessageSquare,
   ScanEye,
+  Phone,
   Database,
   Loader2,
   CheckCircle2,
@@ -97,6 +99,11 @@ export default function Home() {
               <span className="hidden sm:inline">Edge Vision</span>
               <span className="sm:hidden">Vision</span>
             </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="data-[state=active]:bg-gold data-[state=active]:text-navy rounded text-xs sm:text-sm gap-1.5 px-3 py-1.5">
+              <Phone className="w-4 h-4" />
+              <span className="hidden sm:inline">WhatsApp Setup</span>
+              <span className="sm:hidden">WA</span>
+            </TabsTrigger>
             <Button
               size="sm"
               variant="ghost"
@@ -120,6 +127,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="vision">
             <KhotlaVision />
+          </TabsContent>
+          <TabsContent value="whatsapp">
+            <KhotlaWhatsappSetup />
           </TabsContent>
         </Tabs>
       </main>
