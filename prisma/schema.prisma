@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  category    String?  // WATER, ROADS, CORRUPTION, HEALTH, EDUCATION, etc.
+  description String?
+  priority    String?  // HIGH, MEDIUM, LOW
+  status      String   @default("Pending") // Pending, In Progress, Resolved
+  citizenName String?  // Phone number or name
+  lat         Float?
+  lng         Float?
+  imageUrl    String?
+  source      String   @default("web") // web, whatsapp
+  aiSummary   String?
+}
+
+model Project {
+  id       String @id @default(cuid())
+  title    String
+  budget   String?
+  progress Int    @default(0) // 0 to 100
+  lat      Float
+  lng      Float
+  category String? // Infrastructure, Health, Education, etc.
+  status   String @default("Active") // Active, Completed, Delayed
+}
