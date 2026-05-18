@@ -60,3 +60,5 @@ daemon.sh
 keep-alive.sh
 start.sh
 *.pid
+.env
+.env.local
