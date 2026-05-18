@@ -1,7 +1,7 @@
 const { createServer } = require('http')
 const next = require('next')
 
-const PORT = 3000
+const PORT = parseInt(process.env.PORT || '3000', 10)
 
 function startServer() {
   const app = next({ dev: false, port: PORT })
