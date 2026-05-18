@@ -10,9 +10,7 @@ export function KhotlaFooter() {
           <span>Kingdom of Lesotho</span>
         </div>
         <div className="flex items-center gap-2">
-          <span>Evolution API • Groq AI • Prisma</span>
-          <span>•</span>
-          <span className="text-gold/60">Sechaba se Bua</span>
+          <span className="text-gold/60">Sechaba sea Bua — The People Speak</span>
         </div>
       </div>
     </footer>

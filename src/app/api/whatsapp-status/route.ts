@@ -17,14 +17,66 @@ export async function GET() {
       })
     }
 
-    // Check the real connection state from Evolution API
+    // Check the database record first (fast, no external calls)
+    const config = await db.whatsAppConfig.findFirst()
+
+    if (config?.isConnected) {
+      // Verify with Evolution API (short timeout)
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/instance/connectionState/${instanceName}`,
+          {
+            method: 'GET',
+            headers: { apikey: apiKey },
+            signal: AbortSignal.timeout(3000),
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          const state = data?.instance?.state || data?.state || 'unknown'
+          const isOnline = state === 'open' || state === 'connected'
+
+          await db.whatsAppConfig.update({
+            where: { id: config.id },
+            data: {
+              isConnected: isOnline,
+              ...(isOnline && { lastConnectedAt: new Date() }),
+            },
+          })
+
+          return NextResponse.json({
+            online: isOnline,
+            state,
+            instance: instanceName,
+            qrCode: null,
+            message: isOnline
+              ? 'WhatsApp is connected and operational.'
+              : 'WhatsApp is offline. Click Connect to link your number.',
+          })
+        }
+      } catch {
+        // Evolution API unreachable - return last known state from DB
+        return NextResponse.json({
+          online: config.isConnected,
+          state: config.isConnected ? 'open' : 'offline',
+          instance: instanceName,
+          qrCode: null,
+          message: config.isConnected
+            ? 'WhatsApp is connected.'
+            : 'WhatsApp is offline. Click Connect to link your number.',
+        })
+      }
+    }
+
+    // Not connected - try a quick check with very short timeout
     try {
       const response = await fetch(
         `${apiBaseUrl}/instance/connectionState/${instanceName}`,
         {
           method: 'GET',
           headers: { apikey: apiKey },
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(3000),
         }
       )
 
@@ -33,45 +85,20 @@ export async function GET() {
         const state = data?.instance?.state || data?.state || 'unknown'
         const isOnline = state === 'open' || state === 'connected'
 
-        // Update the DB
-        const config = await db.whatsAppConfig.findFirst()
-        if (config) {
-          await db.whatsAppConfig.update({
-            where: { id: config.id },
-            data: {
-              isConnected: isOnline,
-              ...(isOnline && { lastConnectedAt: new Date() }),
-            },
-          })
-        }
-
-        let message: string
-        if (isOnline) {
-          message = 'WhatsApp is connected and operational.'
-        } else if (state === 'connecting') {
-          message = 'WhatsApp is connecting...'
-        } else if (state === 'close' || state === 'disconnected') {
-          message = 'WhatsApp is disconnected. Please reconnect.'
-        } else if (state === 'qr') {
-          message = 'Scan the QR code to connect your WhatsApp.'
-        } else {
-          message = 'WhatsApp is offline. Click Connect to link your number.'
-        }
-
-        // Try to fetch QR code if not connected
+        // Try to get QR code if not connected
         let qrCode: string | null = null
         if (!isOnline) {
           try {
             const qrRes = await fetch(`${apiBaseUrl}/instance/connect/${instanceName}`, {
               headers: { apikey: apiKey },
-              signal: AbortSignal.timeout(8000),
+              signal: AbortSignal.timeout(3000),
             })
             if (qrRes.ok) {
               const qrData = await qrRes.json()
               qrCode = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null
             }
           } catch {
-            // QR fetch failed, that's OK
+            // QR fetch failed
           }
         }
 
@@ -80,26 +107,22 @@ export async function GET() {
           state,
           instance: instanceName,
           qrCode,
-          message,
+          message: isOnline
+            ? 'WhatsApp is connected and operational.'
+            : 'WhatsApp is offline. Click Connect to link your number.',
         })
       }
-
-      return NextResponse.json({
-        online: false,
-        state: 'offline',
-        instance: instanceName,
-        qrCode: null,
-        message: 'WhatsApp is offline. Click Connect to link your number.',
-      })
     } catch {
-      return NextResponse.json({
-        online: false,
-        state: 'offline',
-        instance: instanceName,
-        qrCode: null,
-        message: 'WhatsApp is offline. Click Connect to link your number.',
-      })
+      // API unreachable
     }
+
+    return NextResponse.json({
+      online: false,
+      state: 'offline',
+      instance: instanceName,
+      qrCode: null,
+      message: 'WhatsApp is offline. Click Connect to link your number.',
+    })
   } catch (error) {
     console.error('WhatsApp status check error:', error)
     return NextResponse.json({

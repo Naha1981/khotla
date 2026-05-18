@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { useTheme } from 'next-themes'
-import { Shield, Wifi, WifiOff, Activity, Sun, Moon } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Shield, Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useSyncExternalStore } from 'react'
 
 const emptySubscribe = () => () => {}
 function useHasMounted() {
@@ -16,36 +15,8 @@ function useHasMounted() {
 }
 
 export function KhotlaHeader() {
-  const [whatsappStatus, setWhatsappStatus] = useState<'online' | 'offline' | 'not_configured' | 'checking'>('checking')
-  const [lastChecked, setLastChecked] = useState<string>('')
   const mounted = useHasMounted()
-  const hasChecked = useRef(false)
   const { theme, setTheme } = useTheme()
-
-  useEffect(() => {
-    if (hasChecked.current) return
-    hasChecked.current = true
-
-    async function checkStatus() {
-      try {
-        const res = await fetch('/api/whatsapp-status')
-        const data = await res.json()
-        if (data.state === 'not_configured') {
-          setWhatsappStatus('not_configured')
-        } else {
-          setWhatsappStatus(data.online ? 'online' : 'offline')
-        }
-        setLastChecked(new Date().toLocaleTimeString())
-      } catch {
-        setWhatsappStatus('offline')
-      }
-    }
-
-    checkStatus()
-    const interval = setInterval(checkStatus, 30000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   return (
     <header className="bg-header-bg border-b border-header-border px-4 sm:px-6 py-3">
@@ -59,49 +30,16 @@ export function KhotlaHeader() {
               KHOTLA AI
             </h1>
             <p className="text-[10px] sm:text-xs text-gray-300 tracking-widest uppercase">
-              Sechaba se Bua — The People Speak
+              Sechaba sea Bua — The People Speak
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:flex items-center gap-2 text-xs text-gray-300">
-            <Activity className="w-3.5 h-3.5 text-gold" />
-            <span>Sovereign AI Active</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>System Active</span>
           </div>
-          <Badge
-            variant="outline"
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border-0 ${
-              whatsappStatus === 'online'
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : whatsappStatus === 'not_configured'
-                ? 'bg-yellow-500/20 text-yellow-400'
-                : whatsappStatus === 'offline'
-                ? 'bg-red-500/20 text-red-400'
-                : 'bg-yellow-500/20 text-yellow-400'
-            }`}
-          >
-            {whatsappStatus === 'online' ? (
-              <Wifi className="w-3 h-3" />
-            ) : whatsappStatus === 'not_configured' ? (
-              <Activity className="w-3 h-3" />
-            ) : whatsappStatus === 'offline' ? (
-              <WifiOff className="w-3 h-3" />
-            ) : (
-              <Activity className="w-3 h-3 animate-pulse" />
-            )}
-            <span className="hidden sm:inline">
-              WhatsApp: {whatsappStatus === 'online' ? 'Online' : whatsappStatus === 'not_configured' ? 'Setup Required' : whatsappStatus === 'offline' ? 'Offline' : 'Checking...'}
-            </span>
-            <span className="sm:hidden">
-              WA: {whatsappStatus === 'online' ? 'On' : whatsappStatus === 'not_configured' ? 'Setup' : whatsappStatus === 'offline' ? 'Off' : '...'}
-            </span>
-          </Badge>
-          {lastChecked && (
-            <span className="hidden lg:inline text-[10px] text-gray-400">
-              Last check: {lastChecked}
-            </span>
-          )}
 
           {/* Theme Toggle */}
           {mounted && (

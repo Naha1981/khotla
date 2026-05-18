@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "KHOTLA AI — Sovereign Governance Platform",
-  description: "Sechaba se Bua — AI-powered civic communication platform for the Kingdom of Lesotho. Real-time citizen reporting, infrastructure monitoring, and transparent governance.",
+  description: "Sechaba sea Bua — AI-powered civic communication platform for the Kingdom of Lesotho. Real-time citizen reporting, infrastructure monitoring, and transparent governance.",
   keywords: ["KHOTLA", "Lesotho", "Governance", "AI", "Civic Tech", "Transparency", "WhatsApp"],
   authors: [{ name: "KHOTLA AI" }],
   icons: {

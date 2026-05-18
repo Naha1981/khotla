@@ -69,7 +69,7 @@ export function KhotlaDashboard() {
 
   useEffect(() => {
     fetchReports()
-    const interval = setInterval(fetchReports, 5000)
+    const interval = setInterval(fetchReports, 60000)
     return () => clearInterval(interval)
   }, [fetchReports])
 
