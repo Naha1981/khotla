@@ -25,3 +25,27 @@ Stage Summary:
 - WhatsApp Setup UI allows configuration of Evolution API credentials and QR code pairing
 - Status badge shows "Setup Required" when not configured, "Online" when connected
 - All APIs tested and verified working end-to-end
+
+---
+Task ID: 2
+Agent: Main
+Task: Fix application error, correct tagline, and restore server
+
+Work Log:
+- Diagnosed "Application error: a client-side exception has occurred" - server was down
+- Identified that background processes get killed between bash sessions in sandbox
+- Fixed server.js: removed aggressive keepAliveTimeout=1, added uncaughtException/unhandledRejection handlers, bind to 0.0.0.0
+- Created forever.sh respawn script with double-fork to persist server process across bash sessions
+- Updated package.json dev script from "node server.js 2>&1 | tee dev.log" to "next start -p 3000"
+- Added error.tsx error boundary component for graceful client-side error handling
+- Verified tagline "Sechaba sea Bua" is correct in all 3 locations (header, footer, layout metadata)
+- Rebuilt Next.js production build successfully
+- Started persistent server using forever.sh double-fork daemon approach
+- Verified all API endpoints working: /api/reports, /api/projects, /api/whatsapp-status
+- Server responding with 200 on all requests
+
+Stage Summary:
+- Server now running persistently via forever.sh respawn daemon
+- Error boundary added for graceful client-side error handling
+- Tagline "Sechaba sea Bua" confirmed correct across all components
+- All APIs verified operational with demo data

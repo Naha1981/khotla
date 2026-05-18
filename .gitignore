@@ -51,4 +51,12 @@ prompt
 
 server.log
 # Skills directory
-/skills/
+/skills/node_modules/
+.next/
+dev.log
+forever.log
+server.pid
+daemon.sh
+keep-alive.sh
+start.sh
+*.pid

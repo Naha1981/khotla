@@ -9,16 +9,14 @@ function startServer() {
 
   app.prepare().then(() => {
     const server = createServer((req, res) => {
-      // Force Connection: close to prevent keep-alive issues
-      res.setHeader('Connection', 'close')
       handle(req, res)
     })
 
-    server.keepAliveTimeout = 1
-    server.headersTimeout = 5000
+    server.keepAliveTimeout = 5000
+    server.headersTimeout = 10000
 
-    server.listen(PORT, () => {
-      console.log(`> KHOTLA AI ready on http://localhost:${PORT}`)
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`> KHOTLA AI ready on http://0.0.0.0:${PORT}`)
     })
 
     server.on('error', (err) => {
@@ -31,6 +29,14 @@ function startServer() {
     })
     process.on('SIGINT', () => {
       server.close(() => process.exit(0))
+    })
+
+    // Keep process alive
+    process.on('uncaughtException', (err) => {
+      console.error('Uncaught exception:', err)
+    })
+    process.on('unhandledRejection', (err) => {
+      console.error('Unhandled rejection:', err)
     })
   }).catch((err) => {
     console.error('Failed to start:', err)
