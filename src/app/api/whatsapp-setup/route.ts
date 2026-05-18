@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// ---------------------------------------------------------------------------
-// Helper: build the webhook URL that points back to our app
-// ---------------------------------------------------------------------------
+// Server-side Evolution API configuration from environment variables
+function getEvolutionConfig() {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL || ''
+  const apiKey = process.env.EVOLUTION_API_KEY || ''
+  const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'Khotla_Main'
+  return { apiBaseUrl, apiKey, instanceName }
+}
+
 function buildWebhookUrl(req: NextRequest): string {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL
   if (envUrl) return `${envUrl}/api/whatsapp-webhook`
 
-  // Fallback: derive from the incoming request headers
   const host = req.headers.get('host')
   const protocol = req.headers.get('x-forwarded-proto') ?? 'https'
   if (host) return `${protocol}://${host}/api/whatsapp-webhook`
@@ -17,188 +21,157 @@ function buildWebhookUrl(req: NextRequest): string {
 }
 
 // ---------------------------------------------------------------------------
-// GET – Fetch current WhatsApp configuration and connection status
+// GET – Fetch current WhatsApp connection status
 // ---------------------------------------------------------------------------
 export async function GET() {
   try {
-    const configs = await db.whatsAppConfig.findMany({
-      orderBy: { createdAt: 'desc' },
-    })
+    const { apiBaseUrl, apiKey, instanceName } = getEvolutionConfig()
 
-    // For each config, try to fetch the live connection state from Evolution API
-    const enrichedConfigs = await Promise.all(
-      configs.map(async (config) => {
-        if (!config.apiBaseUrl || !config.apiKey || !config.instanceName) {
-          return { ...config, liveState: 'unconfigured' }
-        }
-
-        try {
-          const stateRes = await fetch(
-            `${config.apiBaseUrl}/instance/connectionState/${config.instanceName}`,
-            {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                apikey: config.apiKey,
-              },
-              signal: AbortSignal.timeout(5000),
-            }
-          )
-
-          if (stateRes.ok) {
-            const stateData = await stateRes.json()
-            const state =
-              stateData?.instance?.state || stateData?.state || 'unknown'
-            const isConnected = state === 'open' || state === 'connected'
-
-            // Sync DB with live state
-            if (config.isConnected !== isConnected) {
-              await db.whatsAppConfig.update({
-                where: { id: config.id },
-                data: {
-                  isConnected,
-                  lastConnectedAt: isConnected ? new Date() : config.lastConnectedAt,
-                },
-              })
-            }
-
-            return { ...config, isConnected, liveState: state }
-          }
-
-          return { ...config, liveState: 'unreachable' }
-        } catch {
-          return { ...config, liveState: 'error' }
-        }
+    if (!apiBaseUrl || !apiKey) {
+      return NextResponse.json({
+        online: false,
+        state: 'not_configured',
+        instance: null,
+        qrCode: null,
+        message: 'WhatsApp not configured yet.',
       })
-    )
+    }
 
-    return NextResponse.json({ configs: enrichedConfigs })
+    // Check the real connection state from Evolution API
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/instance/connectionState/${instanceName}`,
+        {
+          method: 'GET',
+          headers: { apikey: apiKey },
+          signal: AbortSignal.timeout(8000),
+        }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        const state = data?.instance?.state || data?.state || 'unknown'
+        const isOnline = state === 'open' || state === 'connected'
+
+        // Update the DB record if it exists
+        const config = await db.whatsAppConfig.findFirst()
+        if (config) {
+          await db.whatsAppConfig.update({
+            where: { id: config.id },
+            data: {
+              isConnected: isOnline,
+              ...(isOnline && { lastConnectedAt: new Date() }),
+            },
+          })
+        }
+
+        let message: string
+        if (isOnline) {
+          message = 'WhatsApp is connected and operational.'
+        } else if (state === 'connecting') {
+          message = 'WhatsApp is connecting...'
+        } else if (state === 'close' || state === 'disconnected') {
+          message = 'WhatsApp is disconnected. Please reconnect.'
+        } else if (state === 'qr') {
+          message = 'Scan the QR code to connect your WhatsApp.'
+        } else {
+          message = 'WhatsApp is disconnected. Click Connect to link your number.'
+        }
+
+        // Try to fetch QR code if not connected
+        let qrCode: string | null = null
+        if (!isOnline) {
+          try {
+            const qrRes = await fetch(`${apiBaseUrl}/instance/connect/${instanceName}`, {
+              headers: { apikey: apiKey },
+              signal: AbortSignal.timeout(8000),
+            })
+            if (qrRes.ok) {
+              const qrData = await qrRes.json()
+              qrCode = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null
+            }
+          } catch {
+            // QR fetch failed, that's OK
+          }
+        }
+
+        return NextResponse.json({
+          online: isOnline,
+          state,
+          instance: instanceName,
+          qrCode,
+          message,
+        })
+      }
+
+      return NextResponse.json({
+        online: false,
+        state: 'offline',
+        instance: instanceName,
+        qrCode: null,
+        message: 'WhatsApp is offline. Click Connect to link your number.',
+      })
+    } catch {
+      return NextResponse.json({
+        online: false,
+        state: 'offline',
+        instance: instanceName,
+        qrCode: null,
+        message: 'WhatsApp is offline. Click Connect to link your number.',
+      })
+    }
   } catch (error) {
     console.error('WhatsApp setup GET error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch WhatsApp configuration' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      online: false,
+      state: 'offline',
+      instance: null,
+      qrCode: null,
+      message: 'Unable to check WhatsApp status.',
+    })
   }
 }
 
 // ---------------------------------------------------------------------------
-// POST – Save Evolution API configuration (apiKey, apiBaseUrl, instanceName)
+// PUT – Create a WhatsApp instance and connect it (one-click)
 // ---------------------------------------------------------------------------
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { instanceName, apiKey, apiBaseUrl } = body
+    const { apiBaseUrl, apiKey, instanceName } = getEvolutionConfig()
 
-    if (!instanceName || !apiKey || !apiBaseUrl) {
+    if (!apiBaseUrl || !apiKey) {
       return NextResponse.json(
-        { error: 'instanceName, apiKey, and apiBaseUrl are required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate that the apiBaseUrl is reachable (basic check)
-    try {
-      const healthCheck = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/instance/fetchInstances`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: apiKey,
-        },
-        signal: AbortSignal.timeout(8000),
-      })
-
-      if (!healthCheck.ok) {
-        return NextResponse.json(
-          { error: 'Evolution API returned an error. Please check your API key and base URL.' },
-          { status: 400 }
-        )
-      }
-    } catch {
-      return NextResponse.json(
-        { error: 'Cannot reach Evolution API at the provided base URL' },
-        { status: 400 }
+        { error: 'WhatsApp service is not configured on the server.' },
+        { status: 500 }
       )
     }
 
     const webhookUrl = buildWebhookUrl(req)
-    const cleanBaseUrl = apiBaseUrl.replace(/\/$/, '')
 
-    // Upsert the config – only one active config per instanceName
-    const config = await db.whatsAppConfig.upsert({
-      where: { instanceName },
-      create: {
-        instanceName,
-        apiKey,
-        apiBaseUrl: cleanBaseUrl,
-        webhookUrl,
-        isConnected: false,
-      },
-      update: {
-        apiKey,
-        apiBaseUrl: cleanBaseUrl,
-        webhookUrl,
-      },
-    })
-
-    return NextResponse.json({
-      message: 'Configuration saved successfully',
-      config: {
-        id: config.id,
-        instanceName: config.instanceName,
-        apiBaseUrl: config.apiBaseUrl,
-        webhookUrl: config.webhookUrl,
-        isConnected: config.isConnected,
-        createdAt: config.createdAt,
-        updatedAt: config.updatedAt,
-      },
-    })
-  } catch (error) {
-    console.error('WhatsApp setup POST error:', error)
-    return NextResponse.json(
-      { error: 'Failed to save WhatsApp configuration' },
-      { status: 500 }
-    )
-  }
-}
-
-// ---------------------------------------------------------------------------
-// PUT – Create a WhatsApp instance on Evolution API and connect it
-// ---------------------------------------------------------------------------
-export async function PUT(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const { instanceName } = body
-
-    if (!instanceName) {
-      return NextResponse.json(
-        { error: 'instanceName is required' },
-        { status: 400 }
-      )
+    // Save/update config in database
+    const existing = await db.whatsAppConfig.findFirst()
+    if (existing) {
+      await db.whatsAppConfig.update({
+        where: { id: existing.id },
+        data: { apiBaseUrl, apiKey, instanceName, webhookUrl },
+      })
+    } else {
+      await db.whatsAppConfig.create({
+        data: {
+          instanceName,
+          apiKey,
+          apiBaseUrl,
+          webhookUrl,
+          isConnected: false,
+        },
+      })
     }
-
-    const config = await db.whatsAppConfig.findUnique({
-      where: { instanceName },
-    })
-
-    if (!config || !config.apiKey || !config.apiBaseUrl) {
-      return NextResponse.json(
-        { error: 'No configuration found. Please save your Evolution API configuration first.' },
-        { status: 404 }
-      )
-    }
-
-    const { apiBaseUrl, apiKey } = config
-    const webhookUrl = config.webhookUrl || buildWebhookUrl(req)
 
     // 1. Create the instance on Evolution API
     try {
-      const createRes = await fetch(`${apiBaseUrl}/instance/create`, {
+      await fetch(`${apiBaseUrl}/instance/create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: apiKey,
-        },
+        headers: { 'Content-Type': 'application/json', apikey: apiKey },
         body: JSON.stringify({
           instanceName,
           qrcode: true,
@@ -206,45 +179,15 @@ export async function PUT(req: NextRequest) {
         }),
         signal: AbortSignal.timeout(15000),
       })
-
-      if (!createRes.ok) {
-        const errText = await createRes.text().catch(() => 'Unknown error')
-        // Instance may already exist – continue to connect
-        console.warn(
-          `Instance create returned ${createRes.status}: ${errText}. Proceeding to connect...`
-        )
-      } else {
-        const createData = await createRes.json()
-        // Store the instance token if returned
-        const instanceToken =
-          createData?.instance?.token ||
-          createData?.token ||
-          createData?.hash?.apiToken ||
-          null
-
-        if (instanceToken) {
-          await db.whatsAppConfig.update({
-            where: { instanceName },
-            data: { instanceToken },
-          })
-        }
-      }
-    } catch (err) {
-      console.error('Instance create error:', err)
-      return NextResponse.json(
-        { error: 'Failed to create instance on Evolution API. Please check connectivity.' },
-        { status: 502 }
-      )
+    } catch {
+      // Instance may already exist – continue
     }
 
     // 2. Set the webhook
     try {
       await fetch(`${apiBaseUrl}/webhook/set/${instanceName}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: apiKey,
-        },
+        headers: { 'Content-Type': 'application/json', apikey: apiKey },
         body: JSON.stringify({
           enabled: true,
           url: webhookUrl,
@@ -253,55 +196,43 @@ export async function PUT(req: NextRequest) {
         }),
         signal: AbortSignal.timeout(10000),
       })
-    } catch (err) {
-      console.warn('Webhook set failed (non-fatal):', err)
+    } catch {
+      // Webhook setup failure is non-fatal
     }
 
-    // 3. Connect and fetch QR code
+    // 3. Connect and fetch QR code (with retries)
     let qrCode: string | null = null
     let connectionState = 'unknown'
 
-    try {
-      const connectRes = await fetch(
-        `${apiBaseUrl}/instance/connect/${instanceName}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: apiKey,
-          },
-          signal: AbortSignal.timeout(15000),
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const connectRes = await fetch(
+          `${apiBaseUrl}/instance/connect/${instanceName}`,
+          {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', apikey: apiKey },
+            signal: AbortSignal.timeout(15000),
+          }
+        )
+
+        if (connectRes.ok) {
+          const connectData = await connectRes.json()
+          qrCode = connectData?.base64 || connectData?.qrcode?.base64 || connectData?.code || null
+          connectionState = connectData?.instance?.state || connectData?.state || (qrCode ? 'waiting_scan' : 'unknown')
+
+          if (qrCode) break
         }
-      )
 
-      if (connectRes.ok) {
-        const connectData = await connectRes.json()
-
-        // QR code can come in different formats from Evolution API
-        qrCode =
-          connectData?.base64 ||
-          connectData?.qrcode?.base64 ||
-          connectData?.code ||
-          null
-
-        connectionState =
-          connectData?.instance?.state ||
-          connectData?.state ||
-          (qrCode ? 'waiting_scan' : 'unknown')
-      } else {
-        const errText = await connectRes.text().catch(() => '')
-        console.warn(`Connect returned ${connectRes.status}: ${errText}`)
-        connectionState = 'connect_failed'
+        // Wait before retry
+        if (attempt < 2) await new Promise(r => setTimeout(r, 3000))
+      } catch {
+        if (attempt < 2) await new Promise(r => setTimeout(r, 3000))
       }
-    } catch (err) {
-      console.error('Instance connect error:', err)
-      connectionState = 'connect_timeout'
     }
 
-    // 4. Update the database with QR code and state
+    // 4. Update the database
     const isConnected = connectionState === 'open' || connectionState === 'connected'
-    const updatedConfig = await db.whatsAppConfig.update({
-      where: { instanceName },
+    await db.whatsAppConfig.updateMany({
       data: {
         qrCode,
         isConnected,
@@ -312,80 +243,49 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       message: isConnected
-        ? 'WhatsApp instance is connected!'
+        ? 'WhatsApp is connected!'
         : qrCode
-          ? 'Instance created. Scan the QR code to connect.'
-          : 'Instance created but QR code is not available yet. Try connecting again.',
-      config: {
-        id: updatedConfig.id,
-        instanceName: updatedConfig.instanceName,
-        apiBaseUrl: updatedConfig.apiBaseUrl,
-        webhookUrl: updatedConfig.webhookUrl,
-        isConnected: updatedConfig.isConnected,
-        liveState: connectionState,
-      },
+          ? 'Scan the QR code to connect.'
+          : 'Instance created. QR code will appear shortly.',
       qrCode,
+      config: { isConnected, liveState: connectionState },
     })
   } catch (error) {
     console.error('WhatsApp setup PUT error:', error)
     return NextResponse.json(
-      { error: 'Failed to create/connect WhatsApp instance' },
+      { error: 'Failed to connect WhatsApp. Please try again.' },
       { status: 500 }
     )
   }
 }
 
 // ---------------------------------------------------------------------------
-// DELETE – Disconnect/logout the WhatsApp instance
+// DELETE – Disconnect the WhatsApp instance
 // ---------------------------------------------------------------------------
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
-    const body = await req.json()
-    const { instanceName } = body
+    const { apiBaseUrl, apiKey, instanceName } = getEvolutionConfig()
 
-    if (!instanceName) {
+    if (!apiBaseUrl || !apiKey) {
       return NextResponse.json(
-        { error: 'instanceName is required' },
-        { status: 400 }
+        { error: 'WhatsApp service is not configured.' },
+        { status: 500 }
       )
     }
 
-    const config = await db.whatsAppConfig.findUnique({
-      where: { instanceName },
-    })
-
-    if (!config || !config.apiKey || !config.apiBaseUrl) {
-      return NextResponse.json(
-        { error: 'No configuration found for this instance' },
-        { status: 404 }
-      )
-    }
-
-    // 1. Logout from Evolution API
+    // Logout from Evolution API
     try {
-      const logoutRes = await fetch(
-        `${config.apiBaseUrl}/instance/logout/${instanceName}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: config.apiKey,
-          },
-          signal: AbortSignal.timeout(10000),
-        }
-      )
-
-      if (!logoutRes.ok) {
-        const errText = await logoutRes.text().catch(() => 'Unknown error')
-        console.warn(`Logout returned ${logoutRes.status}: ${errText}`)
-      }
-    } catch (err) {
-      console.warn('Logout request failed (instance may already be disconnected):', err)
+      await fetch(`${apiBaseUrl}/instance/logout/${instanceName}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', apikey: apiKey },
+        signal: AbortSignal.timeout(10000),
+      })
+    } catch {
+      // Instance may already be disconnected
     }
 
-    // 2. Update the database – mark as disconnected, clear QR code
-    await db.whatsAppConfig.update({
-      where: { instanceName },
+    // Update database
+    await db.whatsAppConfig.updateMany({
       data: {
         isConnected: false,
         qrCode: null,
@@ -394,12 +294,12 @@ export async function DELETE(req: NextRequest) {
     })
 
     return NextResponse.json({
-      message: `WhatsApp instance "${instanceName}" has been disconnected successfully`,
+      message: 'WhatsApp has been disconnected.',
     })
   } catch (error) {
     console.error('WhatsApp setup DELETE error:', error)
     return NextResponse.json(
-      { error: 'Failed to disconnect WhatsApp instance' },
+      { error: 'Failed to disconnect WhatsApp.' },
       { status: 500 }
     )
   }

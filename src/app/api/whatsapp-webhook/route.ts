@@ -44,7 +44,7 @@ async function getWhatsAppConfig() {
   return {
     apiKey: config?.apiKey || process.env.EVOLUTION_API_KEY || '',
     instanceName: config?.instanceName || process.env.EVOLUTION_INSTANCE_NAME || 'Khotla_Main',
-    apiBaseUrl: config?.apiBaseUrl || process.env.EVOLUTION_API_URL || 'https://my-evolution-api-capsule.onrender.com',
+    apiBaseUrl: config?.apiBaseUrl || process.env.NEXT_PUBLIC_EVOLUTION_URL || '',
   }
 }
 

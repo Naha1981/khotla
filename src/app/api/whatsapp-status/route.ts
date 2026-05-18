@@ -3,40 +3,27 @@ import { db } from '@/lib/db'
 
 export async function GET() {
   try {
-    // Read WhatsAppConfig from the database
-    const config = await db.whatsAppConfig.findFirst()
+    const apiBaseUrl = process.env.NEXT_PUBLIC_EVOLUTION_URL || ''
+    const apiKey = process.env.EVOLUTION_API_KEY || ''
+    const instanceName = process.env.EVOLUTION_INSTANCE_NAME || 'Khotla_Main'
 
-    // If no config exists yet, return not_configured
-    if (!config) {
+    if (!apiBaseUrl || !apiKey) {
       return NextResponse.json({
         online: false,
         state: 'not_configured',
         instance: null,
         qrCode: null,
-        message: 'WhatsApp not configured yet. Go to WhatsApp Setup to connect.',
-      })
-    }
-
-    // If config exists but no apiKey, we can't check the API
-    if (!config.apiKey) {
-      return NextResponse.json({
-        online: false,
-        state: 'not_configured',
-        instance: config.instanceName,
-        qrCode: config.qrCode || null,
-        message: 'WhatsApp not configured yet. Go to WhatsApp Setup to connect.',
+        message: 'WhatsApp not configured yet.',
       })
     }
 
     // Check the real connection state from Evolution API
     try {
       const response = await fetch(
-        `${config.apiBaseUrl}/instance/connectionState/${config.instanceName}`,
+        `${apiBaseUrl}/instance/connectionState/${instanceName}`,
         {
           method: 'GET',
-          headers: {
-            apikey: config.apiKey,
-          },
+          headers: { apikey: apiKey },
           signal: AbortSignal.timeout(8000),
         }
       )
@@ -46,16 +33,18 @@ export async function GET() {
         const state = data?.instance?.state || data?.state || 'unknown'
         const isOnline = state === 'open' || state === 'connected'
 
-        // Update the isConnected field in the database
-        await db.whatsAppConfig.update({
-          where: { id: config.id },
-          data: {
-            isConnected: isOnline,
-            ...(isOnline && { lastConnectedAt: new Date() }),
-          },
-        })
+        // Update the DB
+        const config = await db.whatsAppConfig.findFirst()
+        if (config) {
+          await db.whatsAppConfig.update({
+            where: { id: config.id },
+            data: {
+              isConnected: isOnline,
+              ...(isOnline && { lastConnectedAt: new Date() }),
+            },
+          })
+        }
 
-        // Determine a human-readable message
         let message: string
         if (isOnline) {
           message = 'WhatsApp is connected and operational.'
@@ -64,59 +53,61 @@ export async function GET() {
         } else if (state === 'close' || state === 'disconnected') {
           message = 'WhatsApp is disconnected. Please reconnect.'
         } else if (state === 'qr') {
-          message = 'Scan the QR code to connect your WhatsApp instance.'
+          message = 'Scan the QR code to connect your WhatsApp.'
         } else {
-          message = `WhatsApp state: ${state}`
+          message = 'WhatsApp is offline. Click Connect to link your number.'
+        }
+
+        // Try to fetch QR code if not connected
+        let qrCode: string | null = null
+        if (!isOnline) {
+          try {
+            const qrRes = await fetch(`${apiBaseUrl}/instance/connect/${instanceName}`, {
+              headers: { apikey: apiKey },
+              signal: AbortSignal.timeout(8000),
+            })
+            if (qrRes.ok) {
+              const qrData = await qrRes.json()
+              qrCode = qrData?.base64 || qrData?.qrcode?.base64 || qrData?.code || null
+            }
+          } catch {
+            // QR fetch failed, that's OK
+          }
         }
 
         return NextResponse.json({
           online: isOnline,
-          state: state,
-          instance: config.instanceName,
-          qrCode: config.qrCode || data?.qrcode || data?.qrCode || null,
+          state,
+          instance: instanceName,
+          qrCode,
           message,
         })
       }
 
-      // API responded but not OK
-      const isConnected = false
-      await db.whatsAppConfig.update({
-        where: { id: config.id },
-        data: { isConnected },
-      })
-
       return NextResponse.json({
         online: false,
-        state: 'unreachable',
-        instance: config.instanceName,
-        qrCode: config.qrCode || null,
-        message: 'Evolution API is unreachable. Check your API URL and try again.',
+        state: 'offline',
+        instance: instanceName,
+        qrCode: null,
+        message: 'WhatsApp is offline. Click Connect to link your number.',
       })
-    } catch (fetchError) {
-      // Network error contacting Evolution API
-      console.error('Error checking WhatsApp connection state:', fetchError)
-
-      await db.whatsAppConfig.update({
-        where: { id: config.id },
-        data: { isConnected: false },
-      })
-
+    } catch {
       return NextResponse.json({
         online: false,
-        state: 'error',
-        instance: config.instanceName,
-        qrCode: config.qrCode || null,
-        message: 'Could not reach Evolution API. Please verify the service is running.',
+        state: 'offline',
+        instance: instanceName,
+        qrCode: null,
+        message: 'WhatsApp is offline. Click Connect to link your number.',
       })
     }
   } catch (error) {
     console.error('WhatsApp status check error:', error)
     return NextResponse.json({
       online: false,
-      state: 'error',
+      state: 'offline',
       instance: null,
       qrCode: null,
-      message: 'An unexpected error occurred while checking WhatsApp status.',
+      message: 'Unable to check WhatsApp status.',
     })
   }
 }
