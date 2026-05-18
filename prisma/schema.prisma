@@ -47,6 +47,7 @@ model WhatsAppConfig {
   webhookUrl      String?  // The webhook URL configured
   isConnected     Boolean  @default(false)
   qrCode          String?  // Base64 QR code for pairing
+  phoneNumber     String?  // Connected WhatsApp phone number e.g. "26656001234"
   lastConnectedAt DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

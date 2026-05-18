@@ -13,6 +13,7 @@ export async function GET() {
         state: 'not_configured',
         instance: null,
         qrCode: null,
+        phoneNumber: null,
         message: 'WhatsApp not configured yet.',
       })
     }
@@ -21,14 +22,14 @@ export async function GET() {
     const config = await db.whatsAppConfig.findFirst()
 
     if (config?.isConnected) {
-      // Verify with Evolution API (short timeout)
+      // Verify with Evolution API (with generous timeout for Render free tier)
       try {
         const response = await fetch(
           `${apiBaseUrl}/instance/connectionState/${instanceName}`,
           {
             method: 'GET',
             headers: { apikey: apiKey },
-            signal: AbortSignal.timeout(3000),
+            signal: AbortSignal.timeout(15000),
           }
         )
 
@@ -37,11 +38,19 @@ export async function GET() {
           const state = data?.instance?.state || data?.state || 'unknown'
           const isOnline = state === 'open' || state === 'connected'
 
+          // Try to extract phone number from connection state data
+          let phoneNumber: string | null = config.phoneNumber
+          const instanceData = data?.instance
+          if (instanceData?.phone) {
+            phoneNumber = instanceData.phone
+          }
+
           await db.whatsAppConfig.update({
             where: { id: config.id },
             data: {
               isConnected: isOnline,
               ...(isOnline && { lastConnectedAt: new Date() }),
+              ...(phoneNumber && phoneNumber !== config.phoneNumber && { phoneNumber }),
             },
           })
 
@@ -50,6 +59,7 @@ export async function GET() {
             state,
             instance: instanceName,
             qrCode: null,
+            phoneNumber,
             message: isOnline
               ? 'WhatsApp is connected and operational.'
               : 'WhatsApp is offline. Click Connect to link your number.',
@@ -59,24 +69,25 @@ export async function GET() {
         // Evolution API unreachable - return last known state from DB
         return NextResponse.json({
           online: config.isConnected,
-          state: config.isConnected ? 'open' : 'offline',
+          state: config.isConnected ? 'open' : 'api_unreachable',
           instance: instanceName,
           qrCode: null,
+          phoneNumber: config.phoneNumber,
           message: config.isConnected
             ? 'WhatsApp is connected.'
-            : 'WhatsApp is offline. Click Connect to link your number.',
+            : 'WhatsApp service is starting up, please wait...',
         })
       }
     }
 
-    // Not connected - try a quick check with very short timeout
+    // Not connected - try a check with generous timeout
     try {
       const response = await fetch(
         `${apiBaseUrl}/instance/connectionState/${instanceName}`,
         {
           method: 'GET',
           headers: { apikey: apiKey },
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(15000),
         }
       )
 
@@ -85,13 +96,22 @@ export async function GET() {
         const state = data?.instance?.state || data?.state || 'unknown'
         const isOnline = state === 'open' || state === 'connected'
 
+        // Try to extract phone number
+        let phoneNumber: string | null = null
+        const instanceData = data?.instance
+        if (instanceData?.phone) {
+          phoneNumber = instanceData.phone
+        } else if (config?.phoneNumber) {
+          phoneNumber = config.phoneNumber
+        }
+
         // Try to get QR code if not connected
         let qrCode: string | null = null
         if (!isOnline) {
           try {
             const qrRes = await fetch(`${apiBaseUrl}/instance/connect/${instanceName}`, {
               headers: { apikey: apiKey },
-              signal: AbortSignal.timeout(3000),
+              signal: AbortSignal.timeout(15000),
             })
             if (qrRes.ok) {
               const qrData = await qrRes.json()
@@ -102,11 +122,20 @@ export async function GET() {
           }
         }
 
+        // Update DB with phone number if we got one
+        if (phoneNumber && config) {
+          await db.whatsAppConfig.update({
+            where: { id: config.id },
+            data: { phoneNumber },
+          })
+        }
+
         return NextResponse.json({
           online: isOnline,
           state,
           instance: instanceName,
           qrCode,
+          phoneNumber,
           message: isOnline
             ? 'WhatsApp is connected and operational.'
             : 'WhatsApp is offline. Click Connect to link your number.',
@@ -118,10 +147,11 @@ export async function GET() {
 
     return NextResponse.json({
       online: false,
-      state: 'offline',
+      state: 'api_unreachable',
       instance: instanceName,
       qrCode: null,
-      message: 'WhatsApp is offline. Click Connect to link your number.',
+      phoneNumber: config?.phoneNumber || null,
+      message: 'WhatsApp service is starting up, please wait...',
     })
   } catch (error) {
     console.error('WhatsApp status check error:', error)
@@ -130,6 +160,7 @@ export async function GET() {
       state: 'offline',
       instance: null,
       qrCode: null,
+      phoneNumber: null,
       message: 'Unable to check WhatsApp status.',
     })
   }

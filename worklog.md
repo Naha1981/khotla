@@ -49,3 +49,50 @@ Stage Summary:
 - Error boundary added for graceful client-side error handling
 - Tagline "Sechaba sea Bua" confirmed correct across all components
 - All APIs verified operational with demo data
+
+---
+Task ID: 3
+Agent: Main
+Task: Fix WhatsApp connection errors, add citizen access, improve API routes
+
+Work Log:
+- Read all existing files: khotla-whatsapp-setup.tsx, khotla-dashboard.tsx, whatsapp-setup/route.ts, whatsapp-status/route.ts, prisma schema, globals.css, page.tsx, .env
+- Added `phoneNumber` field to WhatsAppConfig Prisma model
+- Ran `npx prisma db push` successfully to sync schema
+- Rewrote `/api/whatsapp-setup/route.ts`:
+  - Increased all Evolution API timeouts to 20-30 seconds (from 8-15s)
+  - Added instance existence check (GET fetchInstances before POST create) to avoid conflicts
+  - Added phone number extraction from fetchInstances response
+  - Returns 503 for service unavailable instead of 500
+  - Phone number caching in database
+  - Disconnect clears phoneNumber
+- Rewrote `/api/whatsapp-status/route.ts`:
+  - Increased timeout to 15 seconds (from 3s)
+  - Returns phoneNumber field in response
+  - Phone number extraction from connection state and instance data
+  - Returns `api_unreachable` state when API times out
+  - Friendly "starting up" messages
+- Created `/api/whatsapp-phone/route.ts` but removed it because Turbopack dev server doesn't detect new route directories after startup
+- Integrated phone number retrieval into whatsapp-status route instead
+- Rewrote `khotla-whatsapp-setup.tsx`:
+  - Two-column layout: Left=Admin connection, Right=Citizen Access
+  - Citizen Access section with wa.me link, QR code, phone number display
+  - Instructions in English AND Sesotho
+  - Auto-retry with increasing intervals (5s, 15s, 30s) when API unreachable
+  - Yellow/amber warnings instead of red errors for connectivity issues
+  - "WhatsApp Service is Starting Up" banner with countdown timer
+  - Canvas-generated visual QR code for citizen scanning
+- Added Citizen WhatsApp Banner to `khotla-dashboard.tsx`:
+  - Gold background, navy text banner at top of dashboard
+  - "Report via WhatsApp" with wa.me link
+  - Sesotho subtitle: "Roma pego ka WhatsApp"
+- Cleaned up unused imports (User, Send from lucide-react)
+- All lint checks pass (only pre-existing server.js errors)
+
+Stage Summary:
+- WhatsApp setup page now has citizen access section with wa.me links and QR codes
+- Dashboard has prominent gold WhatsApp banner for citizens
+- All API timeouts increased to handle free Render tier spin-up time
+- Friendly error messages replace red errors with amber warnings
+- Auto-retry logic with increasing intervals when Evolution API is unreachable
+- Phone number is cached in database and displayed when connected

@@ -1,5 +1,6 @@
 'use client'
 
+// KHOTLA AI - Sovereign Governance Platform
 import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'

@@ -21,6 +21,8 @@ import {
   MessageSquare,
   Eye,
   Wifi,
+  Phone,
+  ExternalLink,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -45,7 +47,30 @@ export function KhotlaDashboard() {
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ total: 0, pending: 0, high: 0, resolved: 0, whatsapp: 0 })
+  const [whatsappPhone, setWhatsappPhone] = useState<string | null>(null)
   const { toast } = useToast()
+
+  // Fetch WhatsApp phone number for citizen banner
+  useEffect(() => {
+    async function fetchPhone() {
+      try {
+        const res = await fetch('/api/whatsapp-status')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.phoneNumber) {
+            setWhatsappPhone(data.phoneNumber)
+          }
+        }
+      } catch {
+        // Silent fail
+      }
+    }
+    fetchPhone()
+  }, [])
+
+  const wameLink = whatsappPhone
+    ? `https://wa.me/${whatsappPhone.replace(/[^0-9]/g, '')}?text=Hello%20KHOTLA%20AI`
+    : 'https://wa.me/?text=Hello%20KHOTLA%20AI'
 
   const fetchReports = useCallback(async () => {
     try {
@@ -132,6 +157,27 @@ export function KhotlaDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Citizen WhatsApp Banner */}
+      <a
+        href={wameLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 bg-gold hover:bg-gold-light transition-colors rounded-lg px-4 py-3 group"
+      >
+        <div className="flex items-center justify-center w-10 h-10 bg-navy rounded-lg shrink-0">
+          <Phone className="w-5 h-5 text-gold" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-navy">
+            📱 Report via WhatsApp — Send a message to KHOTLA AI on WhatsApp
+          </p>
+          <p className="text-xs text-navy/70">
+            Roma pego ka WhatsApp · Text, voice, photo, or location
+          </p>
+        </div>
+        <ExternalLink className="w-4 h-4 text-navy/50 group-hover:text-navy shrink-0" />
+      </a>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {statCards.map((s) => (
